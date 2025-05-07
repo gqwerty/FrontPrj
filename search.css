@@ -1,0 +1,76 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background-color: lightblue;
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+h1 {
+    text-align: center;
+    color: royalblue;
+    padding-bottom: 10px;
+    padding-top: 10px;
+    font-size: 50px;
+    text-decoration-style: wavy;
+    font-family: cursive;
+    font-weight: bold;
+}
+h3{
+    text-align: center;
+}
+#search-input {
+    padding: 10px;
+    width: 300px;
+    margin-top: 10px;
+}
+
+#search-button {
+    padding: 10px;
+    margin-top: 10px;
+    background-color: cornflowerblue;
+    color: white;
+    border: solid 1px white;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+#search-button:hover {
+    background-color: cornflowerblue;
+}
+
+#stock-info {
+    margin: 20px;
+    padding: 20px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+#stock-info h2 {
+    font-size: 24px;
+}
+table.stock-table {
+    width: 100%;
+    max-width: 800px;       /* 테이블 최대 너비 제한 */
+    margin: 20px auto;      /* 위아래 마진 + 가운데 정렬 */
+    border-collapse: collapse;
+}
+
+
+table.stock-table th,
+table.stock-table td {
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: left;
+}
+
+table.stock-table th {
+    background-color: #e9f1ff;
+    color: #333;
+}

@@ -1,0 +1,59 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: white;
+    margin: 0;
+    padding: 20px;
+
+}
+
+h1 {
+    text-align: center;
+    color: royalblue;
+    padding-bottom: 10px;
+    padding-top: 10px;
+    font-size: 50px;
+    text-decoration-style: wavy;
+    font-family: cursive;
+    font-weight: bold;
+}
+h2{
+    text-align: center;
+    color: black;
+    padding-bottom: 30px;
+}
+.favorites-container {
+    max-width: 600px;
+    margin: 20px auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.favorite-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid white;
+    padding: 12px;
+    border-radius: 8px;
+    background-color: lightblue;
+}
+
+.stock-info h3 {
+    margin: 0;
+}
+
+.actions button {
+    font-size: 18px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.bell.active {
+    color: green;
+}
+.remove:hover {
+    color: red;
+}

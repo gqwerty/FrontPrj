@@ -10,13 +10,51 @@ let isSettingsSidebarOpen = false;
 let refreshIntervalId = null;
 
 // 로그인 상태 확인
-function isLoggedIn() {
-    return !!localStorage.getItem('user_id');
+async function isLoggedIn() {
+    const userEmail = localStorage.getItem('user_email');
+    const isLoggedInLocal = localStorage.getItem('isLoggedIn');
+    const loginTime = parseInt(localStorage.getItem('loginTime') || '0', 10);
+    const sessionDuration = 24 * 60 * 60 * 1000; // 24시간
+
+    // 로컬 상태 확인
+    if (isLoggedInLocal !== 'true' || !userEmail || (Date.now() - loginTime) >= sessionDuration) {
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('loginTime');
+        localStorage.removeItem('user_id'); // 이전 호환성
+        return false;
+    }
+
+    // 서버 세션 확인
+    try {
+        const response = await fetch(`${BASE_URL}/check-auth`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
+        });
+        const result = await response.json();
+        if (response.ok && result.message === '인증됨') {
+            // 백엔드에서 user_email 또는 user_id 반환 시 로컬 상태 동기화
+            if (result.user_email) {
+                localStorage.setItem('user_email', result.user_email);
+            }
+            if (result.user_id) {
+                localStorage.setItem('user_id', result.user_id);
+            }
+            return true;
+        } else {
+            throw new Error(result.error || '인증되지 않음');
+        }
+    } catch (err) {
+        console.error('Error checking auth:', err);
+        // /check-auth가 없거나 에러 시 로컬 상태에 의존
+        return isLoggedInLocal === 'true' && userEmail;
+    }
 }
 
 // 사용자 설정 로드
 function loadUserSettings() {
-    const userId = localStorage.getItem('user_id');
+    const userId = localStorage.getItem('user_id') || localStorage.getItem('user_email');
     if (userId) {
         const settings = JSON.parse(localStorage.getItem(`settings_${userId}`) || '{}');
         const defaultRefreshInterval = settings.defaultRefreshInterval || '0';
@@ -37,19 +75,25 @@ function loadUserSettings() {
 }
 
 // 사용자 설정 저장
-function saveUserSettings() {
-    const userId = localStorage.getItem('user_id');
+async function saveUserSettings() {
+    const userId = localStorage.getItem('user_id') || localStorage.getItem('user_email');
     if (userId) {
         const settings = {
             defaultRefreshInterval: document.getElementById('default-refresh-interval').value,
             theme: document.body.classList.contains('dark-mode') ? 'dark' : 'light'
         };
         localStorage.setItem(`settings_${userId}`, JSON.stringify(settings));
-        fetch(`${BASE_URL}/api/user/settings`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, settings })
-        }).catch(err => console.error('DB 저장 실패:', err));
+        try {
+            const response = await fetch(`${BASE_URL}/api/user/settings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ userId, settings })
+            });
+            if (!response.ok) throw new Error('DB 저장 실패');
+        } catch (err) {
+            console.error('DB 저장 실패:', err);
+        }
     }
 }
 
@@ -66,7 +110,7 @@ function updateUI() {
     const logoutBtn = document.getElementById('logout-btn');
     const menuToggle = document.getElementById('menu-toggle');
     const settingsToggle = document.getElementById('settings-toggle');
-    if (isLoggedIn()) {
+    if (localStorage.getItem('isLoggedIn') === 'true') {
         signupBtn.style.display = 'none';
         loginBtn.style.display = 'none';
         logoutBtn.style.display = 'inline-block';
@@ -90,9 +134,21 @@ function updateUI() {
 }
 
 // 로그아웃
-function logout() {
+async function logout() {
+    try {
+        await fetch(`${BASE_URL}/logout`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
+        });
+    } catch (err) {
+        console.error('Logout error:', err);
+    }
     saveUserSettings();
     localStorage.removeItem('user_id');
+    localStorage.removeItem('user_email');
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('loginTime');
     localStorage.removeItem('refreshInterval');
     favorites = [];
     isSidebarOpen = false;
@@ -109,12 +165,15 @@ function logout() {
     });
 }
 
-/*// 주식 데이터 가져오기
+// 주식 데이터 가져오기
 async function fetchStocks() {
     try {
-        const response = await fetch(`${BASE_URL}/top_stocks`);
+        const response = await fetch(`${BASE_URL}/top_stocks`, {
+            credentials: 'include'
+        });
         if (!response.ok) throw new Error('주식 데이터 조회 실패');
         const data = await response.json();
+        console.log('Fetched stocks:', data.top_stocks); // 디버깅 로그
         stocks = data.top_stocks.map((stock, index) => ({
             id: index + 1,
             ticker: stock.ticker,
@@ -131,58 +190,47 @@ async function fetchStocks() {
             text: '주식 데이터를 불러오지 못했습니다.',
         });
     }
-}*/
-// 주식 데이터 가져오기
-async function fetchStocks() {
-    try {
-        const response = await fetch(`${BASE_URL}/top_stocks`);
-        if (!response.ok) throw new Error('주식 데이터 조회 실패');
-        const data = await response.json();
-        console.log('Fetched stocks:', data.top_stocks); // 디버깅 로그
-        stocks = data.top_stocks.map((stock, index) => ({
-            id: index + 1,
-            ticker: stock.ticker,
-            name: stock.company_name, // 회사 이름 확인
-            price: parseFloat(stock.price) || 0,
-            volume: parseInt(stock.volume.replace(/,/g, '')) || 0
-        }));
-        loadStocks();
-    } catch (err) {
-        console.error('주식 데이터 조회 실패:', err);
-        Swal.fire({
-            icon: 'error',
-            title: '오류',
-            text: '주식 데이터를 불러오지 못했습니다.',
-        });
-    }
 }
 
 // 즐겨찾기 목록 조회
 async function fetchFavorites() {
-    const userId = localStorage.getItem('user_id');
+    const userId = localStorage.getItem('user_id') || localStorage.getItem('user_email');
     if (!userId) return;
     try {
-        const response = await fetch(`${BASE_URL}/favorites?user_id=${userId}`);
-        if (!response.ok) throw new Error('즐겨찾기 조회 실패');
+        const response = await fetch(`${BASE_URL}/favorites?user_id=${userId}`, {
+            credentials: 'include'
+        });
+        if (!response.ok) throw new Error(`즐겨찾기 조회 실패: ${response.status}`);
         const data = await response.json();
-        favorites = data.map(fav => fav.subscription);
+        console.log('Fetched favorites:', data); // 디버깅 로그
+        // 데이터가 배열인지 확인, 배열이 아니면 빈 배열로 처리
+        favorites = Array.isArray(data) ? data.map(fav => fav.subscription) : [];
         if (isSidebarOpen) {
             renderFavorites();
         }
         loadStocks();
     } catch (err) {
         console.error('즐겨찾기 조회 실패:', err);
-        Swal.fire({
-            icon: 'error',
-            title: '오류',
-            text: '즐겨찾기 목록을 불러오지 못했습니다.',
-        });
+        // 빈 리스트는 에러로 처리하지 않음
+        favorites = [];
+        if (isSidebarOpen) {
+            renderFavorites();
+        }
+        loadStocks();
+        // 실제 서버 에러일 때만 메시지 표시
+        if (err.message !== '즐겨찾기 조회 실패: 404') {
+            Swal.fire({
+                icon: 'error',
+                title: '오류',
+                text: '즐겨찾기 목록을 불러오지 못했습니다.',
+            });
+        }
     }
 }
 
 // 즐겨찾기 토글
 async function toggleFavorite(ticker) {
-    if (!isLoggedIn()) {
+    if (!(await isLoggedIn())) {
         Swal.fire({
             icon: 'warning',
             title: '로그인 필요',
@@ -191,12 +239,13 @@ async function toggleFavorite(ticker) {
         return;
     }
 
-    const userId = localStorage.getItem('user_id');
+    const userId = localStorage.getItem('user_id') || localStorage.getItem('user_email');
     const isFavorited = favorites.includes(ticker);
     try {
         if (isFavorited) {
             const response = await fetch(`${BASE_URL}/favorites/${ticker}?user_id=${userId}`, {
                 method: 'DELETE',
+                credentials: 'include'
             });
             if (!response.ok) throw new Error('즐겨찾기 삭제 실패');
             favorites = favorites.filter(t => t !== ticker);
@@ -205,6 +254,7 @@ async function toggleFavorite(ticker) {
             const response = await fetch(`${BASE_URL}/favorites`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({
                     user_id: userId,
                     company_name: stock.name,
@@ -317,7 +367,6 @@ function loadStocks() {
     paginatedStocks.forEach(stock => {
         const row = document.createElement('tr');
         row.style.cursor = 'pointer';
-        // 디버깅: 회사 이름 출력
         console.log(`Navigating to search.html with name: ${stock.name}`);
         row.onclick = () => window.location.href = `../templates/search.html?name=${encodeURIComponent(stock.name)}`;
         const isFavorited = favorites.includes(stock.ticker);
@@ -326,7 +375,7 @@ function loadStocks() {
             <td>${stock.price.toFixed(2)}</td>
             <td>${stock.volume.toLocaleString()}</td>
             <td>
-                <svg class="favorite-icon ${isFavorited ? 'favorite' : ''} ${!isLoggedIn() ? 'disabled' : ''}" 
+                <svg class="favorite-icon ${isFavorited ? 'favorite' : ''} ${!localStorage.getItem('isLoggedIn') ? 'disabled' : ''}" 
                      onclick="event.stopPropagation(); toggleFavorite('${stock.ticker}')"
                      viewBox="0 0 24 24">
                     <path d="M17 3H7a2 2 0 0 0-2 2v16l7-5 7 5V5a2 2 0 0 0-2-2z"/>
@@ -403,8 +452,8 @@ async function refreshPage() {
 // 로컬스토리지 데이터 마이그레이션
 async function migrateLocalFavorites() {
     const localFavorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-    if (localFavorites.length > 0 && isLoggedIn()) {
-        const userId = localStorage.getItem('user_id');
+    if (localFavorites.length > 0 && localStorage.getItem('isLoggedIn') === 'true') {
+        const userId = localStorage.getItem('user_id') || localStorage.getItem('user_email');
         try {
             for (const ticker of localFavorites) {
                 const stock = stocks.find(s => s.ticker === ticker);
@@ -412,6 +461,7 @@ async function migrateLocalFavorites() {
                     await fetch(`${BASE_URL}/favorites`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
                         body: JSON.stringify({
                             user_id: userId,
                             company_name: stock.name,
@@ -431,12 +481,29 @@ async function migrateLocalFavorites() {
 
 // 초기화
 document.addEventListener('DOMContentLoaded', async () => {
+    // 로그인 상태 확인
+    if (!(await isLoggedIn())) {
+        localStorage.removeItem('user_id');
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('loginTime');
+        updateUI();
+        await fetchStocks();
+        /*Swal.fire({
+            icon: 'warning',
+            title: '로그인 필요',
+            text: '로그인 페이지로 이동합니다.',
+            willClose: () => {
+                window.location.href = '../templates/login.html';
+            }
+        });*/
+        return;
+    }
+
     updateUI();
     await fetchStocks();
-    if (isLoggedIn()) {
-        await migrateLocalFavorites();
-        await fetchFavorites();
-    }
+    await migrateLocalFavorites();
+    await fetchFavorites();
     loadStocks();
     document.getElementById('menu-toggle').addEventListener('click', toggleSidebar);
     document.getElementById('settings-toggle').addEventListener('click', toggleSettingsSidebar);

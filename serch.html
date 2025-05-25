@@ -1,39 +1,33 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>주식 검색</title>
-    <link rel="stylesheet" href="search.css">
+    <meta charset="UTF-8" />
+    <title>Stockify</title>
+    <link rel="stylesheet" href="search.css" />
 </head>
 <body>
 <header>
-    <h1>Stockify</h1>
-    <h2>주식 검색</h2>
-    <label for="search-input"></label><input type="text" id="search-input" placeholder="회사명을 입력하세요">
-    <button id="search-button">검색</button>
+    <h1 class="logo">Stockify</h1>
+    <nav class="navbar">
+        <button id="home-btn">홈</button>
+        <button id="favorites-btn">즐겨찾기</button>
+        <button id="settings-btn">설정</button>
+    </nav>
 </header>
 
-<div id="stock-info">
-        <h3>애플</h3>
-        <table class="stock-table">
-            <tr><th>항목</th><th>정보</th></tr>
-            <tr><td>현재 주가</td><td>150.50 원</td></tr>
-            <tr><td>시가총액</td><td>2,500,000,000,000 원</td></tr>
-            <tr><td>PER (Trailing)</td><td>25.0</td></tr>
-            <tr><td>PER (Forward)</td><td>20.0</td></tr>
-            <tr><td>전일 종가</td><td>148.50 원</td></tr>
-            <tr><td>시가</td><td>149.00 원</td></tr>
-            <tr><td>고가</td><td>151.00 원</td></tr>
-            <tr><td>저가</td><td>148.00 원</td></tr>
-            <tr><td>52주 최고</td><td>182.00 원</td></tr>
-            <tr><td>52주 최저</td><td>120.00 원</td></tr>
-            <tr><td>거래량</td><td>1,000,000 주</td></tr>
-            <tr><td>평균 거래량</td><td>900,000 주</td></tr>
-            <tr><td>배당 수익률</td><td>0.7%</td></tr>
-        </table>
-</div>
+<main>
+    <section class="search-section">
+        <input type="text" id="search-input" placeholder="회사명을 입력하세요" />
+        <button id="search-button">검색</button>
+    </section>
 
+    <section id="stock-info"></section>
+
+    <section id="favorites-popup" class="popup hidden">
+        <h2>즐겨찾기 목록</h2>
+        <ul id="favorites-list"></ul>
+    </section>
+</main>
 
 <script src="search.js"></script>
 </body>

@@ -422,3 +422,46 @@ main {
     cursor: not-allowed;
     opacity: 0.5;
 }
+
+/* =========================================*/
+/* 새로 추가 */
+.stock-table .favorite-icon {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    fill: var(--favorite-color); /* 기본 색상: #ccc 또는 다크 모드에서 #666 */
+    stroke: var(--favorite-color);
+    vertical-align: middle;
+}
+
+.stock-table .favorite-icon.favorite {
+    fill: var(--favorite-active); /* 즐겨찾기 활성화: #ffc107 또는 다크 모드에서 #ffb300 */
+    stroke: var(--favorite-active);
+}
+
+.stock-table .favorite-icon.disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    fill: var(--favorite-color);
+    stroke: var(--favorite-color);
+}
+
+/* 사이드바의 즐겨찾기 아이콘 */
+.favorite-item svg {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    fill: var(--favorite-active); /* 항상 노란색 */
+    stroke: var(--favorite-active);
+}
+
+/* left-section의 즐겨찾기 아이콘 (기존 스타일 유지) */
+.menu-icon .favorite-icon {
+    fill: var(--btn-bg); /* 기본 색상: #007bff 또는 다크 모드에서 #1a73e8 */
+    stroke: var(--btn-bg);
+}
+
+.menu-icon:hover .favorite-icon {
+    fill: var(--btn-hover); /* 호버 색상: #0056b3 또는 다크 모드에서 #1557b0 */
+    stroke: var(--btn-hover);
+}

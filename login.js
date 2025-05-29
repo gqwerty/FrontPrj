@@ -90,7 +90,8 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
         }
 
         // 로컬 상태 저장
-        localStorage.setItem('user_email', payload.user_email);
+        localStorage.setItem('user_id', result.user_id); // user_id 저장 추가
+        localStorage.setItem('user_email', result.user_email || payload.user_email);
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('loginTime', Date.now().toString());
 
